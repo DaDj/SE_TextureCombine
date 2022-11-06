@@ -2,14 +2,38 @@
 using System.Windows;
 using System.Windows.Media.Imaging;
 using System.IO;
+using System.Drawing;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
-namespace WpfApp1
+namespace ShittyMaterialCreator
 {
     /// <summary>
     /// Interaktionslogik für MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
+        public static IEnumerable<string> LongestCommonSubstrings(List<string> strings)
+        {
+            var firstString = strings.FirstOrDefault();
+
+            var allSubstrings = new List<string>();
+            for (int substringLength = firstString.Length - 1; substringLength > 0; substringLength--)
+            {
+                for (int offset = 0; (substringLength + offset) < firstString.Length; offset++)
+                {
+                    string currentSubstring = firstString.Substring(offset, substringLength);
+                    if (!System.String.IsNullOrWhiteSpace(currentSubstring) && !allSubstrings.Contains(currentSubstring))
+                    {
+                        allSubstrings.Add(currentSubstring);
+                    }
+                }
+            }
+
+            return allSubstrings.OrderBy(subStr => subStr).ThenByDescending(subStr => subStr.Length).Where(subStr => strings.All(currentString => currentString.Contains(subStr)));
+        }
+
         private BitmapImage BitmapToImageSource(System.Drawing.Bitmap bitmap)
         {
             using (MemoryStream memory = new MemoryStream())
@@ -27,7 +51,7 @@ namespace WpfApp1
 
 
         public static SEMaterial TheMaterial;
- 
+
 
         public MainWindow()
         {
@@ -57,67 +81,101 @@ namespace WpfApp1
             BitmapImage TheImage = new BitmapImage(new Uri("ressources/icons8-drag-and-drop-100.png", UriKind.Relative)); ;
 
             System.Drawing.Image img = null;
-            
+
             //= System.Drawing.Image.FromFile(@"c:\ggs\ggs Access\images\members\1.jpg");
 
 
 
             if (File.Exists(TheMaterial.Color.Path))
             {
-                ImgColor.Source = GetBitmapfromPath(TheMaterial.Color.Path);
+                ImgColor.Source = BitmapToImageSource(TheMaterial.CreateBitmapfromFile(TheMaterial.Color));
                 img = System.Drawing.Image.FromFile(TheMaterial.Color.Path);
             }
             else
                 ImgColor.Source = TheImage;
 
 
+            if (chbx_Flipnormalgreen.IsChecked == true)
+                TheMaterial.NG.Invert = Inverttype.G;
+            else
+                TheMaterial.NG.Invert = Inverttype.none;
+
             if (File.Exists(TheMaterial.NG.Path))
             {
-                ImgNormal.Source = GetBitmapfromPath(TheMaterial.NG.Path);
-                img = System.Drawing.Image.FromFile(TheMaterial.Color.Path);
+                TheMaterial.CreateBitmapfromFile(TheMaterial.NG);
+                if (chbx_Flipnormalgreen.IsChecked == true)
+                    TheMaterial.NG.TheTexture = TheMaterial.Transform(TheMaterial.NG.TheTexture, "G");
+                ImgNormal.Source = BitmapToImageSource(TheMaterial.NG.TheTexture);
+                img = System.Drawing.Image.FromFile(TheMaterial.NG.Path);
             }
             else
                 ImgNormal.Source = TheImage;
 
 
-          
-
-
-
-            if (File.Exists(TheMaterial.AO.Path))
-            {
-                ImgAO.Source = GetBitmapfromPath(TheMaterial.AO.Path);
-                img = System.Drawing.Image.FromFile(TheMaterial.Color.Path);
-            }
-            else
-                ImgAO.Source = TheImage;
 
             int size = 1024;
             if (img != null)
                 size = img.Width;
 
+           if (chb_InvertAO.IsChecked == true)
+                TheMaterial.AO.Invert = Inverttype.RGB;
+            else
+                TheMaterial.AO.Invert = Inverttype.none;
+
+            if (File.Exists(TheMaterial.AO.Path))
+            {
+                TheMaterial.CreateBitmapfromFile(TheMaterial.AO);
+
+                if (chb_InvertAO.IsChecked == true)
+                   TheMaterial.AO.TheTexture = TheMaterial.Transform(TheMaterial.AO.TheTexture, "RGBA");
+                ImgAO.Source = BitmapToImageSource(TheMaterial.AO.TheTexture);
+            }
+              
+            else
+            {
+                TheMaterial.AO.State = ChannelState.on;
+                ImgAO.Source = BitmapToImageSource(TheMaterial.CreateFakeMap(size, TheMaterial.AO));
+            }
+
+
+
+            if (chbx_InvertGloss.IsChecked == true)
+                TheMaterial.Gloss.Invert = Inverttype.RGB;
+            else
+                TheMaterial.Gloss.Invert = Inverttype.none;
+
             if (File.Exists(TheMaterial.Gloss.Path))
-                ImgRoughness.Source = GetBitmapfromPath(TheMaterial.Gloss.Path);
+            {
+                TheMaterial.CreateBitmapfromFile(TheMaterial.Gloss);
+
+                if (chbx_InvertGloss.IsChecked == true)
+                    TheMaterial.Gloss.TheTexture = TheMaterial.Transform(TheMaterial.Gloss.TheTexture,"RGBA");
+                ImgRoughness.Source = BitmapToImageSource(TheMaterial.Gloss.TheTexture);
+            }
             else
                 ImgRoughness.Source = BitmapToImageSource(TheMaterial.CreateFakeMap(size, TheMaterial.Gloss));
 
+
+
+
+
             if (File.Exists(TheMaterial.Metalness.Path))
-                ImgMetal.Source = GetBitmapfromPath(TheMaterial.Metalness.Path);
+                ImgMetal.Source = BitmapToImageSource(TheMaterial.CreateBitmapfromFile(TheMaterial.Metalness));
             else
                 ImgMetal.Source = BitmapToImageSource(TheMaterial.CreateFakeMap(size, TheMaterial.Metalness));
 
             if (File.Exists(TheMaterial.Alpha.Path))
-                ImgAlpha.Source = GetBitmapfromPath(TheMaterial.Alpha.Path);
+                ImgAlpha.Source = BitmapToImageSource(TheMaterial.CreateBitmapfromFile(TheMaterial.Alpha));
             else
                 ImgAlpha.Source = BitmapToImageSource(TheMaterial.CreateFakeMap(size, TheMaterial.Alpha));
 
             if (File.Exists(TheMaterial.Emissive.Path))
-                ImgEmissive.Source = GetBitmapfromPath(TheMaterial.Emissive.Path);
+                ImgEmissive.Source = BitmapToImageSource(TheMaterial.CreateBitmapfromFile(TheMaterial.Emissive));
             else
                 ImgEmissive.Source = BitmapToImageSource(TheMaterial.CreateFakeMap(size, TheMaterial.Emissive));
 
             if (File.Exists(TheMaterial.Paint.Path))
-                ImgPaint.Source = GetBitmapfromPath(TheMaterial.Paint.Path);
+                ImgPaint.Source = BitmapToImageSource(TheMaterial.CreateBitmapfromFile(TheMaterial.Paint));
             else
                 ImgPaint.Source = BitmapToImageSource(TheMaterial.CreateFakeMap(size, TheMaterial.Paint));
 
@@ -156,13 +214,26 @@ namespace WpfApp1
                     break;
             }
 
-          
+
 
             TheMaterial.TryFindImages(TheDropped);
+            string Basedir = Path.GetDirectoryName(TheDropped);
+
+            List<String> fileEntries = new List<String>();
+            foreach (var item in (Directory.GetFiles(Basedir)))
+            {
+                fileEntries.Add(Path.GetFileName(item));
+            }
+
+            List<String> thenames  = new List<String>();
+            thenames = LongestCommonSubstrings(fileEntries).OrderBy(x => x.Length).ToList();
+           
+            TheMaterial.Name = Regex.Replace(thenames.Last(), "[^A-Za-z0-9 ]", "");
+
             UpdateUIImages();
         }
 
-        public void PerformImageDrop(DragEventArgs e,IMGTypes TheType)
+        public void PerformImageDrop(DragEventArgs e, IMGTypes TheType)
         {
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
@@ -176,11 +247,13 @@ namespace WpfApp1
 
         private void Btn_SetNOTPaintable_Click(object sender, RoutedEventArgs e)
         {
+            TheMaterial.Paint.Path = "";
             TheMaterial.Paint.State = ChannelState.off;
             UpdateUIImages();
         }
         private void Btn_SetPaintable_Click(object sender, RoutedEventArgs e)
         {
+            TheMaterial.Paint.Path = "";
             TheMaterial.Paint.State = ChannelState.on;
             UpdateUIImages();
         }
@@ -193,12 +266,14 @@ namespace WpfApp1
 
         private void Btn_SetNotEmissive_Click(object sender, RoutedEventArgs e)
         {
+            TheMaterial.Emissive.Path = "";
             TheMaterial.Emissive.State = ChannelState.off;
             UpdateUIImages();
         }
 
         private void Btn_SetEmissive_Click(object sender, RoutedEventArgs e)
         {
+            TheMaterial.Emissive.Path = "";
             TheMaterial.Emissive.State = ChannelState.on;
             UpdateUIImages();
         }
@@ -239,7 +314,37 @@ namespace WpfApp1
 
         private void Btn_CreateMaterial_Click(object sender, RoutedEventArgs e)
         {
-             Texassemble.Generate_Material(TheMaterial);
+            Texassemble.Generate_Material(TheMaterial);
+            UpdateUIImages();
+        }
+
+
+        private void chbx_Flipnormalgreen_Click(object sender, RoutedEventArgs e)
+        {
+            if(chbx_Flipnormalgreen.IsChecked == true)
+            TheMaterial.NG.Invert = Inverttype.G;
+            else
+            TheMaterial.NG.Invert = Inverttype.none;
+            UpdateUIImages();
+        
+        }
+
+        private void chbx_InvertGloss_Click(object sender, RoutedEventArgs e)
+        {
+            if(chbx_InvertGloss.IsChecked == true)
+                TheMaterial.Gloss.Invert = Inverttype.RGB;
+            else
+                TheMaterial.Gloss.Invert = Inverttype.none;
+            UpdateUIImages();
+        }
+
+        private void chb_InvertAO_Click(object sender, RoutedEventArgs e)
+        {
+            if (chb_InvertAO.IsChecked == true)
+                TheMaterial.AO.Invert = Inverttype.RGB;
+            else
+                TheMaterial.AO.Invert = Inverttype.none;
+                UpdateUIImages();
         }
     }
 }

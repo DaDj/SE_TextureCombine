@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 
-namespace WpfApp1
+namespace ShittyMaterialCreator
 {
     class Texassemble
     {
@@ -35,8 +35,8 @@ namespace WpfApp1
         }
 
 
-       static string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-       static  string strWorkPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        static string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        static string strWorkPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
         static public void TextAssembleOne(string Output, string Img1, string Img2, string RGBAmask)
         {
@@ -52,7 +52,7 @@ namespace WpfApp1
                 newProcess.WaitForExit();
             }
 
-         
+
         }
 
         public enum RGBAMASK
@@ -65,112 +65,58 @@ namespace WpfApp1
 
         static void Assemble_CM(SEMaterial TheMaterial, string Output)
         {
-
-
             string Mask = "rgbR";
 
-            if (TheMaterial.Metalness.Path == "")
-            {
-                TheMaterial.Metalness.TheTexture.Save(strWorkPath + @"\Metalnessfake.tif", System.Drawing.Imaging.ImageFormat.Tiff);
-                TheMaterial.Metalness.Path = strWorkPath + @"\Metalnessfake.tif";
-            }
+            TheMaterial.Color.TheTexture.Save(strWorkPath + "\\Temp" + @"\Color.tif", System.Drawing.Imaging.ImageFormat.Tiff);
+            TheMaterial.Color.Path = strWorkPath + "\\Temp" + @"\Color.tif";
 
+            TheMaterial.Metalness.TheTexture.Save(strWorkPath + "\\Temp" + @"\Metalness.tif", System.Drawing.Imaging.ImageFormat.Tiff);
+            TheMaterial.Metalness.Path = strWorkPath + "\\Temp" + @"\Metalness.tif";
 
-            TextAssembleOne(strWorkPath + @"\test_cm.tif", TheMaterial.Color.Path, TheMaterial.Metalness.Path, Mask);
+            TextAssembleOne(Output +  @"_cm.tif", TheMaterial.Color.Path, TheMaterial.Metalness.Path, Mask);
         }
 
 
-        static void  Assemble_NG(SEMaterial TheMaterial, string Output)
+        static void Assemble_NG(SEMaterial TheMaterial, string Output)
         {
-            string Mask =  "rgbR";
+            string Mask = "rgbR";
 
+            TheMaterial.NG.TheTexture.Save(strWorkPath + "\\Temp" + @"\Normal.tif", System.Drawing.Imaging.ImageFormat.Tiff);
+            TheMaterial.Gloss.Path = strWorkPath + "\\Temp" + @"\Normal.tif";
+            TheMaterial.Gloss.TheTexture.Save(strWorkPath + "\\Temp" + @"\Gloss.tif", System.Drawing.Imaging.ImageFormat.Tiff);
+            TheMaterial.Gloss.Path = strWorkPath + "\\Temp" + @"\Gloss.tif";
 
-            if (TheMaterial.Gloss.Path == "")
-            {
-                TheMaterial.Gloss.TheTexture.Save(strWorkPath + @"\Glossfake.tif", System.Drawing.Imaging.ImageFormat.Tiff);
-                TheMaterial.Gloss.Path = strWorkPath + @"\Glossfake.tif";
-            }
-
-
-            TextAssembleOne(strWorkPath + @"\test_ng.tif", TheMaterial.NG.Path, TheMaterial.Gloss.Path, Mask);
-            // on NG do texconv + -inverty:  to flip green channel
+            TextAssembleOne(Output + @"_ng.tif", TheMaterial.NG.Path, TheMaterial.Gloss.Path, Mask);
+           
         }
 
+        static void Assemble_ADD(SEMaterial TheMaterial, string Output)
+        {
+            string Mask = "rG00";
+
+            TheMaterial.AO.TheTexture.Save(strWorkPath + "\\Temp" + @"\AO.tif", System.Drawing.Imaging.ImageFormat.Tiff);
+            TheMaterial.AO.Path = strWorkPath + "\\Temp" + @"\AO.tif";
+
+            TheMaterial.Emissive.TheTexture.Save(strWorkPath + "\\Temp" + @"\Emissive.tif", System.Drawing.Imaging.ImageFormat.Tiff);
+            TheMaterial.Emissive.Path = strWorkPath + "\\Temp" + @"\Emissive.tif";
+
+            TextAssembleOne(Output + @"_add.tif", TheMaterial.AO.Path, TheMaterial.Emissive.Path, Mask);
+
+        }
 
 
         public static void Generate_Material(SEMaterial TheMaterial)
         {
-            string ThePath = "C:\\";
-            Assemble_CM(TheMaterial,ThePath);
+            string ThePath = strWorkPath + "\\" + TheMaterial.Name;
+
+            if (!(System.IO.Directory.Exists(strWorkPath + "\\Temp")))
+                System.IO.Directory.CreateDirectory(strWorkPath + "\\Temp");
+
+            Assemble_CM(TheMaterial, ThePath);
             Assemble_NG(TheMaterial, ThePath);
+            Assemble_ADD(TheMaterial, ThePath);
         }
 
-
-        public string getRGBAMask(RGBAMASK TheMask, SEMaterial TheMaterial)
-        {
-            string TheResult = "";
-
-            if (TheMask == RGBAMASK._cm)
-            {
-                if (TheMaterial.Metalness.Path != "")
-                    TheResult = "rgbR";
-                else if (TheMaterial.Metalness.State == ChannelState.on)
-                    TheResult = "rgb1";
-                else
-                    TheResult = "rgb0";
-            }
-
-            if (TheMask == RGBAMASK._ng)
-            {
-                if (TheMaterial.Gloss.Path != "")
-                    TheResult = "rgbR";
-                else if (TheMaterial.Gloss.State == ChannelState.on)
-                    TheResult = "rgb1";
-                else
-                    TheResult = "rgb0";
-            }
-
-            if (TheMask == RGBAMASK._add1)
-            {
-                if (TheMaterial.AO.Path != "")
-                    TheResult = "r";
-                else
-                    TheResult = "0";
-
-                if (TheMaterial.Emissive.Path != "")
-                    TheResult = TheResult + "R00";
-                else if (TheMaterial.Emissive.State == ChannelState.on)
-                    TheResult = TheResult + "100";
-                else
-                    TheResult = TheResult + "000";
-            }
-
-            if (TheMask == RGBAMASK._add2)
-            {
-                if (TheMaterial.AO.Path != "")
-                    TheResult = "r";
-                else
-                    TheResult = "0";
-
-                if (TheMaterial.Emissive.Path != "")
-                    TheResult = TheResult + "r0";
-                else if (TheMaterial.Emissive.State == ChannelState.on)
-                    TheResult = TheResult + "10";
-                else
-                    TheResult = TheResult + "00";
-
-                if (TheMaterial.Paint.Path != "")
-                    TheResult = TheResult + "R";
-                else if (TheMaterial.Paint.State == ChannelState.on)
-                    TheResult = TheResult + "1";
-                else
-                    TheResult = TheResult + "0";
-
-            }
-
-
-            return TheResult;
-        }
 
     }
 }

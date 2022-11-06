@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Drawing;
+using System.Drawing.Imaging;
 
 
-namespace WpfApp1
+namespace ShittyMaterialCreator
 {
     public enum ChannelState
     {
@@ -31,6 +32,14 @@ namespace WpfApp1
         Gloss,
         Emissive
     }
+    public enum Inverttype
+    {
+        none,
+        RGB,
+        R,
+        G,
+        B
+    }
 
     public class SEMaterialChannel
     {
@@ -38,6 +47,7 @@ namespace WpfApp1
         public Bitmap TheTexture;
         public ChannelState State = ChannelState.off;
         public ChannelType Type = ChannelType.real;
+        public Inverttype Invert = Inverttype.none;
     }
 
     public class SEMaterial
@@ -50,7 +60,7 @@ namespace WpfApp1
         public SEMaterialChannel Paint = new SEMaterialChannel();
         public SEMaterialChannel Emissive = new SEMaterialChannel();
         public SEMaterialChannel Alpha = new SEMaterialChannel();
-
+        public string Name = "";
         public string SearchforChannelImage(string Dir, IMGTypes TheType)
         {
             List<String> ThePattern = new List<String> { "", "", "" }; ;
@@ -134,6 +144,55 @@ namespace WpfApp1
                 Paint.Path = SearchforChannelImage(Basedir, IMGTypes.Paint);
         }
 
+        public Bitmap Transform(Bitmap source,string Mask)
+        {
+            //create a blank bitmap the same size as original
+            Bitmap newBitmap = new Bitmap(source.Width, source.Height);
+
+            //get a graphics object from the new image
+            Graphics g = Graphics.FromImage(newBitmap);
+
+            // create the negative color matrix
+            ColorMatrix colorMatrix = new ColorMatrix(new float[][]
+                {
+                new float[] {-1, 0, 0, 0, 0},
+                new float[] {0, -1, 0, 0, 0},
+                new float[] {0, 0, -1, 0, 0},
+                new float[] {0, 0, 0, 1, 0},
+                new float[] {1, 1, 1, 0, 1}
+                });
+      
+            if (Mask.Equals("G"))
+            {
+                colorMatrix = new ColorMatrix(new float[][]
+                {
+                new float[] {1, 0, 0, 0, 0},
+                new float[] {0, -1, 0, 0, 0},
+                new float[] {0, 0, 1, 0, 0},
+                new float[] {0, 0, 0, 1, 0},
+                new float[] {0, 1, 0, 0, 0}
+                });
+            }
+
+
+
+                // create some image attributes
+                ImageAttributes attributes = new ImageAttributes();
+  
+            attributes.SetColorMatrix(colorMatrix);
+
+            g.DrawImage(source, new Rectangle(0, 0, source.Width, source.Height),
+                        0, 0, source.Width, source.Height, GraphicsUnit.Pixel, attributes);
+
+            //dispose the Graphics object
+            g.Dispose();
+
+         
+
+            return newBitmap;
+        }
+
+
         public Bitmap CreateFakeMap(int Size, SEMaterialChannel Channel)
         {
             Bitmap bmp = new Bitmap(Size, Size);
@@ -145,19 +204,38 @@ namespace WpfApp1
             Channel.TheTexture = bmp;
             return bmp;
         }
+
+        public Bitmap CreateBitmapfromFile(SEMaterialChannel Channel)
+        {
+
+            Channel.TheTexture = new Bitmap(Channel.Path);
+            return Channel.TheTexture;
+        }
         public void Reset()
         {
             Color = new SEMaterialChannel();
+
             NG= new SEMaterialChannel();
+            NG.Invert = Inverttype.G;
+
             Metalness = new SEMaterialChannel();
             Metalness.State = ChannelState.off;
+
             Gloss = new SEMaterialChannel();
             Gloss.State = ChannelState.off;
+            Gloss.Invert = Inverttype.RGB;
+
             AO = new SEMaterialChannel();
+            AO.State = ChannelState.on;
+
             Paint = new SEMaterialChannel();
             Paint.State = ChannelState.off;
+
             Emissive = new SEMaterialChannel();
             Emissive.State = ChannelState.off;
+
+            Alpha = new SEMaterialChannel();
+            Alpha.State = ChannelState.off;
         }
     }
 
