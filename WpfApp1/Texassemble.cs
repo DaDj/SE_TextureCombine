@@ -82,7 +82,7 @@ namespace ShittyMaterialCreator
             string Mask = "rgbR";
 
             TheMaterial.NG.TheTexture.Save(strWorkPath + "\\Temp" + @"\Normal.tif", System.Drawing.Imaging.ImageFormat.Tiff);
-            TheMaterial.Gloss.Path = strWorkPath + "\\Temp" + @"\Normal.tif";
+            TheMaterial.NG.Path = strWorkPath + "\\Temp" + @"\Normal.tif";
             TheMaterial.Gloss.TheTexture.Save(strWorkPath + "\\Temp" + @"\Gloss.tif", System.Drawing.Imaging.ImageFormat.Tiff);
             TheMaterial.Gloss.Path = strWorkPath + "\\Temp" + @"\Gloss.tif";
 

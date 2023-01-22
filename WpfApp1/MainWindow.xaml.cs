@@ -229,7 +229,7 @@ namespace ShittyMaterialCreator
             thenames = LongestCommonSubstrings(fileEntries).OrderBy(x => x.Length).ToList();
            
             TheMaterial.Name = Regex.Replace(thenames.Last(), "[^A-Za-z0-9 ]", "");
-
+            TextBox_TheMaterialT.Text = TheMaterial.Name;
             UpdateUIImages();
         }
 
@@ -345,6 +345,11 @@ namespace ShittyMaterialCreator
             else
                 TheMaterial.AO.Invert = Inverttype.none;
                 UpdateUIImages();
+        }
+
+        private void TextBox_TheMaterialT_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            TheMaterial.Name = TextBox_TheMaterialT.Text;
         }
     }
 }
