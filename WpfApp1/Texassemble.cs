@@ -107,6 +107,11 @@ namespace ShittyMaterialCreator
 
         public static void Generate_Material(SEMaterial TheMaterial)
         {
+            // Make sure  Material always has a Name.
+            //Already done in the button click fucntion, but what if we ever call it not from the button?
+            if (TheMaterial.Name == "")
+                TheMaterial.Name = "CustomMaterial";
+
             string ThePath = strWorkPath + "\\" + TheMaterial.Name;
 
             if (!(System.IO.Directory.Exists(strWorkPath + "\\Temp")))

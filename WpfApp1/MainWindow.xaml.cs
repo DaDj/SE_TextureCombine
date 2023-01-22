@@ -314,6 +314,11 @@ namespace ShittyMaterialCreator
 
         private void Btn_CreateMaterial_Click(object sender, RoutedEventArgs e)
         {
+            // Make sure the Material always has a Name
+            if (TheMaterial.Name == "")
+                TheMaterial.Name = "CustomMaterial";
+            TextBox_TheMaterialT.Text = TheMaterial.Name ;
+
             Texassemble.Generate_Material(TheMaterial);
             UpdateUIImages();
         }
