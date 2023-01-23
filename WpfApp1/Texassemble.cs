@@ -38,13 +38,31 @@ namespace ShittyMaterialCreator
         static string strExeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         static string strWorkPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
+        static string EnsureQuotes(string path)
+        {
+            if (!path.StartsWith("\""))
+                path = "\"" + path;
+
+            if (!path.EndsWith("\""))
+                path += "\"";
+
+            return path;
+        }
+
         static public void TextAssembleOne(string Output, string Img1, string Img2, string RGBAmask)
         {
-            string cmdArgs = string.Format("merge -o {0}  -f R8G8B8A8_UNORM  -swizzle {1}  {2} {3}", Output, RGBAmask, Img1, Img2);
-
 
             if (System.IO.File.Exists(Output))
                 System.IO.File.Delete(Output);
+
+            Output = EnsureQuotes(Output);
+            Img1 = EnsureQuotes(Img1);
+            Img2 = EnsureQuotes(Img2);
+
+            string cmdArgs = string.Format("merge -o {0}  -f R8G8B8A8_UNORM  -swizzle {1}  {2} {3}", Output, RGBAmask, Img1, Img2);
+
+            var path = Path.GetFullPath(Path.Combine(strWorkPath, "texassemble.exe"));
+            path = EnsureQuotes(path);
 
             var newProcess = StartProcess(strWorkPath + "\\texassemble.exe", cmdArgs);
             if (newProcess != null)
